@@ -18,6 +18,25 @@ func (cfg *Cfg) readAzureSettings() {
 	cloudName := azureSection.Key("cloud").MustString(azsettings.AzurePublic)
 	azureSettings.Cloud = azsettings.NormalizeAzureCloud(cloudName)
 
+	_, err := azureSettings.GetCloud(azureSettings.Cloud)
+
+	if err != nil {
+		// custom cloud detected, add to clouds map
+		sectionKey := "azure." + cloudName
+		customCloudSection := cfg.Raw.Section(sectionKey)
+
+		cloudSettings := azsettings.AzureCloudSettings{
+			Name: cloudName,
+			DisplayName: cloudName,
+			portal: customCloudSection.Key("portal").MustString()
+			logAnalytics: customCloudSection.Key("logAnalytics").MustString()
+			azureDataExplorerSuffix: customCloudSection.Key("azureDataExplorerSuffix").MustString()
+			resourceManager:  customCloudSection.Key("resourceManager").String()
+		}
+
+		azsettings.AddCloud(cloudSettings)
+	}
+
 	// Managed Identity authentication
 	azureSettings.ManagedIdentityEnabled = azureSection.Key("managed_identity_enabled").MustBool(false)
 	azureSettings.ManagedIdentityClientId = azureSection.Key("managed_identity_client_id").String()
